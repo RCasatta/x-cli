@@ -84,6 +84,8 @@ module T
     end
 
     def print_users(users)
+      return if users.nil?
+
       users = sort_collection(users, USERS_SORT_MAP, ->(user) { user["screen_name"].downcase })
       format_users(users)
     end

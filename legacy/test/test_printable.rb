@@ -211,6 +211,10 @@ class TestPrintable < TTestCase
 
   # print_users
 
+  def test_print_users_returns_nil_when_users_are_nil
+    assert_nil(@probe.send(:print_users, nil))
+  end
+
   def test_print_users_does_not_print_csv_headers_when_users_are_empty
     @probe.options = {"csv" => true}
     said = []
