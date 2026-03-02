@@ -5,10 +5,13 @@ module T
 
       def mutate_users(users)
         me_id = current_user_id
-        Array(users).flatten.map do |entry|
+        Array(users).flatten.filter_map do |entry|
           resolved_user = resolve_user(entry)
           yield resolved_user["id"].to_s, me_id
           resolved_user
+        rescue X::NotFound, X::Forbidden => e
+          warn "@#{entry}: #{e.message}"
+          nil
         end
       end
 

@@ -202,6 +202,18 @@ class TestCLI < TTestCase
     assert_requested(:post, v2_pattern("users/7505382/blocking"))
   end
 
+  def test_block_skips_not_found_user_and_reports_name
+    @cli.options = @cli.options.merge("profile" => "#{fixture_path}/.trc")
+    stub_v2_current_user
+    stub_v2_user_by_name("sferik")
+    stub_v2_get("users/by/username/nonexistent").to_return(status: 404, body: '{"errors":[{"message":"User not found"}]}', headers: V2_JSON_HEADERS)
+    stub_v2_post("users/7505382/blocking").to_return(v2_return("v2/post_response.json"))
+    @cli.block("nonexistent", "sferik")
+
+    assert_match(/@nonexistent:/, $stderr.string)
+    assert_match(/blocked 1 user/, $stdout.string)
+  end
+
   # direct_messages
 
   def dm_stubs
