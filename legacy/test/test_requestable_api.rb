@@ -1375,6 +1375,23 @@ class TestRequestableAPI < TTestCase
     assert_equal %w[14100886 7505382], @probe.x_retweeters_ids("12345")
   end
 
+  def test_x_blocked_ids_follows_next_token
+    page1 = {"data" => [{"id" => "14100886", "username" => "pengwynn"}], "meta" => {"result_count" => 1, "next_token" => "blocknextpage"}}
+    page2 = {"data" => [{"id" => "7505382", "username" => "sferik"}], "meta" => {"result_count" => 1}}
+    call_count = 0
+    @fake_client.on_get do |url|
+      if url.include?("users/me") then ME_RESPONSE
+      elsif url.include?("blocking")
+        call_count += 1
+        call_count == 1 ? page1 : page2
+      else
+        {"data" => []}
+      end
+    end
+
+    assert_equal %w[14100886 7505382], @probe.x_blocked_ids
+  end
+
   def test_x_muted_ids_follows_next_token
     page1 = {"data" => [{"id" => "14100886", "username" => "pengwynn"}], "meta" => {"result_count" => 1, "next_token" => "mutenextpage"}}
     page2 = {"data" => [{"id" => "7505382", "username" => "sferik"}], "meta" => {"result_count" => 1}}

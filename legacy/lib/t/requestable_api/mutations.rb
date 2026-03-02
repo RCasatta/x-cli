@@ -34,6 +34,21 @@ module T
         end
       end
 
+      def x_blocked_ids
+        ids = []
+        params = {max_results: "1000", "user.fields": "id,username"}
+        me_id = current_user_id
+        MAX_PAGE.times do
+          response = t_get_v2("users/#{me_id}/blocking", params)
+          ids.concat(extract_ids(response))
+          token = response.dig("meta", "next_token")
+          break if token.nil?
+
+          params = params.merge(pagination_token: token)
+        end
+        ids
+      end
+
       def x_muted_ids
         ids = []
         params = {max_results: "1000", "user.fields": "id,username"}

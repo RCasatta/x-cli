@@ -1084,6 +1084,17 @@ fn execute_remote_command(
             print_users(&users, leaf, out);
             Ok(0)
         }
+        [single] if single == "blocks" => {
+            let me = fetch_current_user(backend)?;
+            let me_id = value_id(&me).unwrap_or_default();
+            let response = backend.get_json(
+                &format!("/2/users/{me_id}/blocking"),
+                vec![("user.fields".to_string(), V2_USER_FIELDS.to_string())],
+            )?;
+            let users = extract_users(&response);
+            print_users(&users, leaf, out);
+            Ok(0)
+        }
         [single] if single == "muted" => {
             let me = fetch_current_user(backend)?;
             let me_id = value_id(&me).unwrap_or_default();

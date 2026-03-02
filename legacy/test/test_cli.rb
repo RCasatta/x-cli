@@ -214,6 +214,28 @@ class TestCLI < TTestCase
     assert_match(/blocked 1 user/, $stdout.string)
   end
 
+  # blocks
+
+  def blocks_stubs
+    stub_v2_current_user
+    stub_v2_get("users/7505382/blocking").to_return(v2_return("v2/following_ids.json")).then.to_return(v2_return("v2/empty.json"))
+    stub_v2_users_lookup.to_return(v2_return("v2/users_list.json"))
+  end
+
+  def test_blocks_requests_correct_resource
+    blocks_stubs
+    @cli.blocks
+
+    assert_requested(:get, v2_pattern("users/7505382/blocking"))
+  end
+
+  def test_blocks_has_output
+    blocks_stubs
+    @cli.blocks
+
+    refute_empty($stdout.string.chomp)
+  end
+
   # direct_messages
 
   def dm_stubs
