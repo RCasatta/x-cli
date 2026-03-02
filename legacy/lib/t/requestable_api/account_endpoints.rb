@@ -28,11 +28,12 @@ module T
         true
       end
 
-      def x_update_profile(description: nil, location: nil, name: nil, url: nil)
+      def x_update_profile(description: nil, location: nil, name: nil, profile_link_color: nil, url: nil)
         params = {}
         params[:description] = description unless description.nil?
         params[:location] = location unless location.nil?
         params[:name] = name unless name.nil?
+        params[:profile_link_color] = profile_link_color unless profile_link_color.nil?
         params[:url] = url unless url.nil?
         response = t_post_v1_form("account/update_profile.json", params)
         extract_users(response).first || (response || {})

@@ -170,6 +170,24 @@ class TestSet < TTestCase
     assert_equal("@testcli's image has been updated.", $stdout.string.chomp)
   end
 
+  # profile_link_color
+
+  def test_profile_link_color_requests_correct_resource
+    @set_cmd.options = @set_cmd.options.merge("profile" => "#{fixture_path}/.trc")
+    stub_post("/1.1/account/update_profile.json").with(body: {profile_link_color: "0084B4"}).to_return(body: fixture("sferik.json"), headers: {content_type: "application/json; charset=utf-8"})
+    @set_cmd.profile_link_color("0084B4")
+
+    assert_requested(:post, "https://api.twitter.com/1.1/account/update_profile.json", body: {profile_link_color: "0084B4"})
+  end
+
+  def test_profile_link_color_has_correct_output
+    @set_cmd.options = @set_cmd.options.merge("profile" => "#{fixture_path}/.trc")
+    stub_post("/1.1/account/update_profile.json").with(body: {profile_link_color: "0084B4"}).to_return(body: fixture("sferik.json"), headers: {content_type: "application/json; charset=utf-8"})
+    @set_cmd.profile_link_color("0084B4")
+
+    assert_equal("@testcli's profile link color has been updated.", $stdout.string.chomp)
+  end
+
   # website
 
   def test_website_requests_correct_resource

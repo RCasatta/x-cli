@@ -62,6 +62,12 @@ module T
     end
     map %w[avatar image] => :profile_image
 
+    desc "profile_link_color COLOR_CODE", "Sets the color scheme of links on your profile page."
+    def profile_link_color(color_code)
+      x_update_profile(profile_link_color: color_code)
+      say "@#{@rcfile.active_profile[0]}'s profile link color has been updated."
+    end
+
     desc "website URI", "Sets the website field on your profile."
     def website(uri)
       x_update_profile(url: uri)

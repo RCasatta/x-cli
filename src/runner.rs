@@ -1532,6 +1532,15 @@ fn execute_remote_command(
             writeln!(out, "@{}'s name has been updated.", active_name).ok();
             Ok(0)
         }
+        [first, second] if first == "set" && second == "profile_link_color" => {
+            ensure_min_args(path, args, 1)?;
+            let _ = backend.post_json(
+                "/1.1/account/update_profile.json",
+                vec![("profile_link_color".to_string(), args[0].clone())],
+            )?;
+            writeln!(out, "@{}'s profile link color has been updated.", active_name).ok();
+            Ok(0)
+        }
         [first, second] if first == "set" && second == "website" => {
             ensure_min_args(path, args, 1)?;
             let _ = backend.post_json(
