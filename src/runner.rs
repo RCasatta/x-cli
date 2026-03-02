@@ -21,8 +21,7 @@ use x_api::backend::{
 const DEFAULT_NUM_RESULTS: usize = 20;
 const MAX_SEARCH_RESULTS: usize = 100;
 const MAX_PAGE: usize = 51;
-const V2_TWEET_FIELDS: &str =
-    "author_id,created_at,entities,geo,id,in_reply_to_user_id,public_metrics,source,text";
+const V2_TWEET_FIELDS: &str = "author_id,created_at,entities,geo,id,in_reply_to_user_id,public_metrics,referenced_tweets,source,text";
 const V2_USER_FIELDS: &str =
     "created_at,description,id,location,name,protected,public_metrics,url,username,verified";
 const V2_LIST_FIELDS: &str =
@@ -895,6 +894,28 @@ fn execute_remote_command(
                 .next()
                 .unwrap_or(response);
             print_status(&status, leaf, out);
+            let mut chain = Vec::new();
+            let mut current = status;
+            for _ in 0..10 {
+                let parent_id = match current.get("in_reply_to_status_id").and_then(Value::as_str) {
+                    Some(id) => id.to_string(),
+                    None => break,
+                };
+                let parent_response = backend
+                    .get_json_oauth2(&format!("/2/tweets/{}", parent_id), v2_tweet_params())?;
+                match extract_tweets(&parent_response).into_iter().next() {
+                    Some(p) => {
+                        current = p.clone();
+                        chain.push(p);
+                    }
+                    None => break,
+                }
+            }
+            if !chain.is_empty() {
+                writeln!(out).ok();
+                writeln!(out, "In reply to:").ok();
+                print_tweets(&chain, leaf, out, &context.color);
+            }
             Ok(0)
         }
         [single] if single == "users" => {
@@ -1538,7 +1559,12 @@ fn execute_remote_command(
                 "/1.1/account/update_profile.json",
                 vec![("profile_link_color".to_string(), args[0].clone())],
             )?;
-            writeln!(out, "@{}'s profile link color has been updated.", active_name).ok();
+            writeln!(
+                out,
+                "@{}'s profile link color has been updated.",
+                active_name
+            )
+            .ok();
             Ok(0)
         }
         [first, second] if first == "set" && second == "website" => {
@@ -3694,6 +3720,17 @@ fn normalize_v2_tweet(
     }
     if let Some(source) = tweet.get("source") {
         object.insert("source".to_string(), source.clone());
+    }
+    if let Some(refs) = tweet.get("referenced_tweets").and_then(Value::as_array)
+        && let Some(replied) = refs
+            .iter()
+            .find(|r| r.get("type").and_then(Value::as_str) == Some("replied_to"))
+        && let Some(id) = replied.get("id").and_then(Value::as_str)
+    {
+        object.insert(
+            "in_reply_to_status_id".to_string(),
+            Value::String(id.to_string()),
+        );
     }
     if let Some(entities) = tweet.get("entities") {
         object.insert("entities".to_string(), entities.clone());

@@ -657,6 +657,7 @@ module T
       status = x_status(status_id.to_i, opts)
       location = extract_status_location(status)
       format_status(status, location)
+      print_reply_chain(status)
     end
 
     desc "timeline [USER]", "Returns the #{DEFAULT_NUM_RESULTS} most recent Tweets posted by a user."
@@ -932,6 +933,26 @@ module T
       array << ["Source", strip_tags(status["source"].to_s)]
       array << ["Location", location] unless location.nil?
       print_table(array)
+    end
+
+    def print_reply_chain(status)
+      chain = []
+      current = status
+      10.times do
+        parent_id = current["in_reply_to_status_id"]
+        break if parent_id.nil?
+
+        parent = x_status(parent_id.to_i)
+        break if parent.empty?
+
+        chain << parent
+        current = parent
+      end
+      return if chain.empty?
+
+      say
+      say "In reply to:"
+      print_tweets(chain)
     end
 
     def print_dm_messages(messages)

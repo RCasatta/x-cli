@@ -36,6 +36,8 @@ module T
         end
         object["created_at"] = tweet["created_at"] if tweet["created_at"]
         object["source"] = tweet["source"] if tweet["source"]
+        replied_to = Array(tweet["referenced_tweets"]).find { |ref_tweet| ref_tweet["type"] == "replied_to" }
+        object["in_reply_to_status_id"] = replied_to["id"] if replied_to
         object
       end
 

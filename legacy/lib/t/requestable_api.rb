@@ -45,7 +45,7 @@ module T
     MAX_SEARCH_RESULTS = 100
     MAX_PAGE = 51
 
-    V2_TWEET_FIELDS = "author_id,created_at,entities,geo,id,in_reply_to_user_id,public_metrics,source,text"
+    V2_TWEET_FIELDS = "author_id,created_at,entities,geo,id,in_reply_to_user_id,public_metrics,referenced_tweets,source,text"
     V2_USER_FIELDS = "created_at,description,id,location,name,protected,public_metrics,url,username,verified"
     V2_LIST_FIELDS = "created_at,description,follower_count,id,member_count,name,owner_id,private"
     V2_TWEET_EXPANSIONS = "author_id,geo.place_id"

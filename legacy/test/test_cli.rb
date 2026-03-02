@@ -2792,6 +2792,32 @@ class TestCLI < TTestCase
     assert_includes($stdout.string, "8 months ago")
   end
 
+  def test_status_shows_reply_chain
+    stub_v2_get("tweets/55709764298092546").to_return(v2_return("v2/status_reply.json"))
+    stub_v2_get("tweets/55709764298092545").to_return(v2_return("v2/status.json"))
+    @cli.status("55709764298092546")
+
+    assert_includes($stdout.string, "That's so true!")
+    assert_includes($stdout.string, "In reply to:")
+    assert_includes($stdout.string, "The problem with your code")
+  end
+
+  def test_status_no_reply_chain_for_non_reply
+    status_stubs
+    @cli.status("55709764298092545")
+
+    refute_includes($stdout.string, "In reply to:")
+  end
+
+  def test_status_reply_chain_stops_when_parent_not_found
+    stub_v2_get("tweets/55709764298092546").to_return(v2_return("v2/status_reply.json"))
+    stub_v2_get("tweets/55709764298092545").to_return(v2_return("v2/empty.json"))
+    @cli.status("55709764298092546")
+
+    assert_includes($stdout.string, "That's so true!")
+    refute_includes($stdout.string, "In reply to:")
+  end
+
   # timeline
 
   def timeline_stubs
