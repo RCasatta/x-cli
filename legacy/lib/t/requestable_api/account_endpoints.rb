@@ -23,6 +23,21 @@ module T
         end
       end
 
+      def x_place(place_id)
+        place = t_get_v1("geo/id/#{place_id}.json")
+        normalize_place(place)
+      end
+
+      def x_geo_search(query, lat:, long:)
+        response = t_get_v1("geo/search.json", {query: query, lat: lat, long: long})
+        Array(response.dig("result", "places")).map { |place| normalize_place(place) }
+      end
+
+      def x_geo_reverse_geocode(lat:, long:)
+        response = t_get_v1("geo/reverse_geocode.json", {lat: lat, long: long})
+        Array(response.dig("result", "places")).map { |place| normalize_place(place) }
+      end
+
       def x_settings(lang:)
         t_post_v1_form("account/settings.json", {lang: lang})
         true
@@ -82,6 +97,14 @@ module T
 
       def parse_filter_follows(value)
         parse_filter_terms(value).map { |id| "from:#{id}" }
+      end
+
+      def normalize_place(place)
+        return {} if place.nil?
+
+        {"id" => place["id"], "name" => place["name"], "full_name" => place["full_name"],
+         "place_type" => place["place_type"], "country" => place["country"],
+         "country_code" => place["country_code"]}
       end
     end
   end
