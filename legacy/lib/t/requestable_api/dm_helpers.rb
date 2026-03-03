@@ -64,7 +64,7 @@ module T
       def dm_v2_params
         {
           event_types: "MessageCreate",
-          "dm_event.fields": "id,sender_id,text,created_at,dm_conversation_id,urls",
+          "dm_event.fields": "id,sender_id,text,created_at,dm_conversation_id",
           expansions: "sender_id,participant_ids",
           "user.fields": "id,username",
         }

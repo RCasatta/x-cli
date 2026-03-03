@@ -1962,7 +1962,7 @@ fn fetch_direct_messages_response(
         ("event_types".to_string(), "MessageCreate".to_string()),
         (
             "dm_event.fields".to_string(),
-            "id,sender_id,text,created_at,dm_conversation_id,urls".to_string(),
+            "id,sender_id,text,created_at,dm_conversation_id".to_string(),
         ),
         (
             "expansions".to_string(),
