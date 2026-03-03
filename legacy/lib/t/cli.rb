@@ -129,8 +129,8 @@ module T
     method_option "unsorted", aliases: "-u", type: :boolean, desc: "Output is not sorted."
     def blocks
       blocked_ids = x_blocked_ids.to_a
-      require "retryable"
-      blocked_users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      blocked_users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(blocked_ids)
       end
       print_users(blocked_users)
@@ -216,8 +216,8 @@ module T
     def favorite(status_id, *status_ids)
       status_ids.unshift(status_id)
       status_ids.collect!(&:to_i)
-      require "retryable"
-      favorites = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      favorites = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_favorite(status_ids)
       end
       number = favorites.length
@@ -272,8 +272,8 @@ module T
         user = options["id"] ? user.to_i : user.tr("@", "")
       end
       following_ids = x_friend_ids(user).to_a
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(following_ids)
       end
       print_users(users)
@@ -297,8 +297,8 @@ module T
       follower_ids = Thread.new { x_follower_ids(user1).to_a }
       following_ids = Thread.new { x_friend_ids(user2).to_a }
       followings_following_ids = follower_ids.value & following_ids.value
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(followings_following_ids)
       end
       print_users(users)
@@ -318,8 +318,8 @@ module T
         user = options["id"] ? user.to_i : user.tr("@", "")
       end
       follower_ids = x_follower_ids(user).to_a
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(follower_ids)
       end
       print_users(users)
@@ -342,8 +342,8 @@ module T
       following_ids = Thread.new { x_friend_ids(user).to_a }
       follower_ids = Thread.new { x_follower_ids(user).to_a }
       friend_ids = following_ids.value & follower_ids.value
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(friend_ids)
       end
       print_users(users)
@@ -366,8 +366,8 @@ module T
       follower_ids = Thread.new { x_follower_ids(user).to_a }
       following_ids = Thread.new { x_friend_ids(user).to_a }
       groupie_ids = (follower_ids.value - following_ids.value)
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(groupie_ids)
       end
       print_users(users)
@@ -397,8 +397,8 @@ module T
         end
       end
       intersection = sets.reduce(:&)
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(intersection)
       end
       print_users(users)
@@ -422,8 +422,8 @@ module T
       following_ids = Thread.new { x_friend_ids(user).to_a }
       follower_ids = Thread.new { x_follower_ids(user).to_a }
       leader_ids = (following_ids.value - follower_ids.value)
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(leader_ids)
       end
       print_users(users)
@@ -500,8 +500,8 @@ module T
     method_option "unsorted", aliases: "-u", type: :boolean, desc: "Output is not sorted."
     def muted
       muted_ids = x_muted_ids.to_a
-      require "retryable"
-      muted_users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      muted_users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(muted_ids)
       end
       print_users(muted_users)
@@ -583,8 +583,8 @@ module T
     def retweet(status_id, *status_ids)
       status_ids.unshift(status_id)
       status_ids.collect!(&:to_i)
-      require "retryable"
-      retweets = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      retweets = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_retweet(status_ids)
       end
       number = retweets.length
@@ -763,8 +763,8 @@ module T
     def users(user, *users)
       users.unshift(user)
       options["id"] ? users.collect!(&:to_i) : users.collect! { |u| u.tr("@", "") }
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         x_users(users)
       end
       print_users(users)
@@ -1032,24 +1032,26 @@ module T
     def add_location!(options, opts)
       return nil unless options["location"]
 
-      lat, lng = options["location"] == "location" ? [location.lat, location.lng] : options["location"].split(",").collect(&:to_f)
+      lat, lng = options["location"] == "location" ? [location.latitude, location.longitude] : options["location"].split(",").collect(&:to_f)
       opts.merge!(lat:, long: lng)
     end
 
     def location
       return @location if @location
 
-      require "geokit"
+      require "geocoder"
       require "open-uri"
       ip_address = URI.open("http://checkip.dyndns.org/") do |body|
         /(?:\d{1,3}\.){3}\d{1,3}/.match(body.read)[0]
       end
-      @location = Geokit::Geocoders::MultiGeocoder.geocode(ip_address)
+      @location = Geocoder.search(ip_address).first
     end
 
     def reverse_geocode(geo)
-      require "geokit"
-      geoloc = Geokit::Geocoders::MultiGeocoder.reverse_geocode(geo["coordinates"])
+      require "geocoder"
+      geoloc = Geocoder.search(geo["coordinates"]).first
+      return unless geoloc
+
       if geoloc.city && geoloc.state && geoloc.country
         [geoloc.city, geoloc.state, geoloc.country].join(", ")
       elsif geoloc.state && geoloc.country

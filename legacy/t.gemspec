@@ -6,11 +6,11 @@ require "t/version"
 
 Gem::Specification.new do |spec|
   spec.add_dependency "cgi", ">= 0.2"
-  spec.add_dependency "geokit", "~> 1.14"
+  spec.add_dependency "geocoder", "~> 1.8"
   spec.add_dependency "htmlentities", "~> 4.3"
   spec.add_dependency "launchy", "~> 3.0"
   spec.add_dependency "oauth", "~> 1.1"
-  spec.add_dependency "retryable", "~> 3.0"
+  spec.add_dependency "retriable", "~> 3.1"
   spec.add_dependency "thor", "~> 1.3"
   spec.add_dependency "x", "~> 0.19"
   spec.author = "Erik Berlin"

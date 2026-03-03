@@ -1,0 +1,17 @@
+{
+  "place_id": 123456,
+  "lat": "37.75963095",
+  "lon": "-122.410067",
+  "display_name": "2158 Bryant Street, Mission District, San Francisco, San Francisco County, California, 94110, United States",
+  "address": {
+    "house_number": "2158",
+    "road": "Bryant Street",
+    "neighbourhood": "Mission District",
+    "city": "San Francisco",
+    "county": "San Francisco County",
+    "state": "California",
+    "postcode": "94110",
+    "country": "United States",
+    "country_code": "us"
+  }
+}

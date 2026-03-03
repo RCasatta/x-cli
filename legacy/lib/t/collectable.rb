@@ -1,5 +1,5 @@
 require "x"
-require "retryable"
+require "retriable"
 
 module T
   module Collectable
@@ -7,7 +7,7 @@ module T
     MAX_PAGE = 51
 
     def collect_with_max_id(collection = [], max_id = nil, &)
-      tweets = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      tweets = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         yield(max_id)
       end
       return collection if tweets.nil?
@@ -31,7 +31,7 @@ module T
     end
 
     def collect_with_page(collection = ::Set.new, page = 1, previous = nil, &)
-      tweets = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      tweets = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         yield page
       end
       return collection if tweets.nil? || tweets == previous || page >= MAX_PAGE

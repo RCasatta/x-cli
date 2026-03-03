@@ -37,8 +37,8 @@ module T
 
     def fetch_users(users, options)
       format_users!(users, options)
-      require "retryable"
-      users = Retryable.retryable(tries: 3, on: X::Error, sleep: 0) do
+      require "retriable"
+      users = Retriable.retriable(tries: 3, on: X::Error, base_interval: 0) do
         yield users
       end
       [users, users.length]

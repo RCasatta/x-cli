@@ -2292,7 +2292,7 @@ class TestCLI < TTestCase
     stub_v2_get("tweets/263813522369159169").to_return(v2_return("v2/status_with_mention.json"))
     stub_v2_post("tweets").to_return(v2_return("v2/post_response.json"))
     stub_request(:get, "http://checkip.dyndns.org/").to_return(body: fixture("checkip.html"), headers: {content_type: "text/html"})
-    stub_request(:get, "http://www.geoplugin.net/xml.gp?ip=50.131.22.169").to_return(body: fixture("geoplugin.xml"), headers: {content_type: "application/xml"})
+    stub_request(:get, "http://ipinfo.io/50.131.22.169/geo").to_return(body: fixture("ipinfo.json"), headers: {content_type: "application/json"})
   end
 
   def test_reply_fetches_tweet
@@ -2316,11 +2316,11 @@ class TestCLI < TTestCase
     assert_not_requested(:get, "http://checkip.dyndns.org/")
   end
 
-  def test_reply_does_not_look_up_location_geoplugin
+  def test_reply_does_not_look_up_location_ipinfo
     reply_stubs
     @cli.reply("263813522369159169", "Testing")
 
-    assert_not_requested(:get, "http://www.geoplugin.net/xml.gp?ip=50.131.22.169")
+    assert_not_requested(:get, "http://ipinfo.io/50.131.22.169/geo")
   end
 
   def test_reply_has_the_correct_output
@@ -2364,12 +2364,12 @@ class TestCLI < TTestCase
     assert_requested(:get, "http://checkip.dyndns.org/")
   end
 
-  def test_reply_with_location_looks_up_geoplugin
+  def test_reply_with_location_looks_up_ipinfo
     reply_stubs
     @cli.options = @cli.options.merge("location" => "location")
     @cli.reply("263813522369159169", "Testing")
 
-    assert_requested(:get, "http://www.geoplugin.net/xml.gp?ip=50.131.22.169")
+    assert_requested(:get, "http://ipinfo.io/50.131.22.169/geo")
   end
 
   def test_reply_with_location_coordinates_does_not_look_up_ip
@@ -2747,26 +2747,34 @@ class TestCLI < TTestCase
 
   def test_status_with_no_place
     stub_v2_get("tweets/55709764298092545").to_return(v2_return("v2/status_no_place.json"))
-    stub_request(:get, "https://maps.google.com/maps/api/geocode/json").with(query: {latlng: "37.75963095,-122.410067", sensor: "false"}).to_return(body: fixture("geo.json"), headers: {content_type: "application/json; charset=UTF-8"})
+    stub_request(:get, "https://nominatim.openstreetmap.org/reverse").with(query: hash_including("lat" => "37.75963095", "lon" => "-122.410067")).to_return(body: fixture("nominatim.json"), headers: {content_type: "application/json"})
     @cli.status("55709764298092545")
 
-    assert_includes($stdout.string, "San Francisco, CA, United States")
+    assert_includes($stdout.string, "San Francisco, California, United States")
   end
 
   def test_status_with_no_place_and_no_city
     stub_v2_get("tweets/55709764298092545").to_return(v2_return("v2/status_no_place.json"))
-    stub_request(:get, "https://maps.google.com/maps/api/geocode/json").with(query: {latlng: "37.75963095,-122.410067", sensor: "false"}).to_return(body: fixture("geo_no_city.json"), headers: {content_type: "application/json; charset=UTF-8"})
+    stub_request(:get, "https://nominatim.openstreetmap.org/reverse").with(query: hash_including("lat" => "37.75963095", "lon" => "-122.410067")).to_return(body: fixture("nominatim_no_city.json"), headers: {content_type: "application/json"})
     @cli.status("55709764298092545")
 
-    assert_includes($stdout.string, "CA, United States")
+    assert_includes($stdout.string, "California, United States")
   end
 
   def test_status_with_no_place_and_no_state
     stub_v2_get("tweets/55709764298092545").to_return(v2_return("v2/status_no_place.json"))
-    stub_request(:get, "https://maps.google.com/maps/api/geocode/json").with(query: {latlng: "37.75963095,-122.410067", sensor: "false"}).to_return(body: fixture("geo_no_state.json"), headers: {content_type: "application/json; charset=UTF-8"})
+    stub_request(:get, "https://nominatim.openstreetmap.org/reverse").with(query: hash_including("lat" => "37.75963095", "lon" => "-122.410067")).to_return(body: fixture("nominatim_no_state.json"), headers: {content_type: "application/json"})
     @cli.status("55709764298092545")
 
     assert_includes($stdout.string, "United States")
+  end
+
+  def test_status_with_no_place_and_no_geocode_result
+    stub_v2_get("tweets/55709764298092545").to_return(v2_return("v2/status_no_place.json"))
+    stub_request(:get, "https://nominatim.openstreetmap.org/reverse").with(query: hash_including("lat" => "37.75963095", "lon" => "-122.410067")).to_return(status: 404, body: "", headers: {content_type: "application/json"})
+    @cli.status("55709764298092545")
+
+    refute_includes($stdout.string, "Location")
   end
 
   def test_status_with_long
@@ -3199,7 +3207,7 @@ class TestCLI < TTestCase
     stub_v2_current_user
     stub_v2_post("tweets").to_return(v2_return("v2/post_response.json"))
     stub_request(:get, "http://checkip.dyndns.org/").to_return(body: fixture("checkip.html"), headers: {content_type: "text/html"})
-    stub_request(:get, "http://www.geoplugin.net/xml.gp?ip=50.131.22.169").to_return(body: fixture("geoplugin.xml"), headers: {content_type: "application/xml"})
+    stub_request(:get, "http://ipinfo.io/50.131.22.169/geo").to_return(body: fixture("ipinfo.json"), headers: {content_type: "application/json"})
   end
 
   def test_update_posts_tweet
@@ -3216,11 +3224,11 @@ class TestCLI < TTestCase
     assert_not_requested(:get, "http://checkip.dyndns.org/")
   end
 
-  def test_update_does_not_look_up_location_geoplugin
+  def test_update_does_not_look_up_location_ipinfo
     update_stubs
     @cli.update("Testing")
 
-    assert_not_requested(:get, "http://www.geoplugin.net/xml.gp?ip=50.131.22.169")
+    assert_not_requested(:get, "http://ipinfo.io/50.131.22.169/geo")
   end
 
   def test_update_has_the_correct_output
@@ -3256,12 +3264,12 @@ class TestCLI < TTestCase
     assert_requested(:get, "http://checkip.dyndns.org/")
   end
 
-  def test_update_with_location_looks_up_geoplugin
+  def test_update_with_location_looks_up_ipinfo
     update_stubs
     @cli.options = @cli.options.merge("location" => "location")
     @cli.update("Testing")
 
-    assert_requested(:get, "http://www.geoplugin.net/xml.gp?ip=50.131.22.169")
+    assert_requested(:get, "http://ipinfo.io/50.131.22.169/geo")
   end
 
   def test_update_with_location_has_correct_output
