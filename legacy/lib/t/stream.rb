@@ -17,7 +17,7 @@ module T
       "%s",     # Last element does not need special formatting
     ].freeze
 
-    STREAM_FIELDS = "tweet.fields=author_id,created_at,entities,text&expansions=author_id&user.fields=username,name".freeze
+    STREAM_FIELDS = "tweet.fields=author_id,created_at,entities,referenced_tweets,text&expansions=author_id,referenced_tweets.id&user.fields=username,name".freeze
 
     check_unknown_options!
 

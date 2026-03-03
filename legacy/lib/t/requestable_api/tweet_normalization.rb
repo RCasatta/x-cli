@@ -9,16 +9,17 @@ module T
 
         users_by_id = index_items_by_id(value.dig("includes", "users"))
         places_by_id = index_items_by_id(value.dig("includes", "places"))
-        return value["data"].map { |tweet| normalize_v2_tweet(tweet, users_by_id, places_by_id) } if value["data"].is_a?(Array)
-        return [normalize_v2_tweet(value["data"], users_by_id, places_by_id)] if value["data"].is_a?(Hash)
+        tweets_by_id = index_items_by_id(value.dig("includes", "tweets"))
+        return value["data"].map { |tweet| normalize_v2_tweet(tweet, users_by_id, places_by_id, tweets_by_id) } if value["data"].is_a?(Array)
+        return [normalize_v2_tweet(value["data"], users_by_id, places_by_id, tweets_by_id)] if value["data"].is_a?(Hash)
 
         []
       end
 
-      def normalize_v2_tweet(tweet, users_by_id, places_by_id)
+      def normalize_v2_tweet(tweet, users_by_id, places_by_id, tweets_by_id = {})
         return tweet if tweet.is_a?(Hash) && tweet.key?("user")
 
-        object = build_v2_tweet_core(tweet)
+        object = build_v2_tweet_core(tweet, users_by_id, tweets_by_id)
         apply_v2_tweet_entities(object, tweet)
         apply_v2_tweet_metrics(object, tweet)
         apply_v2_tweet_author(object, tweet, users_by_id)
@@ -26,10 +27,10 @@ module T
         object
       end
 
-      def build_v2_tweet_core(tweet)
+      def build_v2_tweet_core(tweet, users_by_id = {}, tweets_by_id = {})
         object = {}
         apply_v2_id(object, tweet)
-        text = tweet["full_text"] || tweet["text"]
+        text = expand_retweet_text(tweet, users_by_id, tweets_by_id)
         if text
           object["text"] = text
           object["full_text"] = text
@@ -39,6 +40,26 @@ module T
         replied_to = Array(tweet["referenced_tweets"]).find { |ref_tweet| ref_tweet["type"] == "replied_to" }
         object["in_reply_to_status_id"] = replied_to["id"] if replied_to
         object
+      end
+
+      def expand_retweet_text(tweet, users_by_id, tweets_by_id)
+        text = tweet["full_text"] || tweet["text"]
+        retweeted = Array(tweet["referenced_tweets"]).find { |ref_tweet| ref_tweet["type"] == "retweeted" }
+        rt = retweeted && tweets_by_id[retweeted["id"]]
+        return text unless rt
+
+        rt_text = rt["full_text"] || rt["text"]
+        return text unless rt_text
+
+        rt_name = retweet_author_name(rt, users_by_id)
+        "RT @#{rt_name}: #{rt_text}"
+      end
+
+      def retweet_author_name(retweet, users_by_id)
+        author = users_by_id[retweet["author_id"]]
+        return retweet["author_id"] unless author
+
+        author["username"] || author["screen_name"] || retweet["author_id"]
       end
 
       def apply_v2_tweet_entities(object, tweet)

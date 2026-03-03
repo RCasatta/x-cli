@@ -1038,6 +1038,31 @@ class TestRequestableAPI < TTestCase
     assert_equal "RT @alice: truncated…", result["text"]
   end
 
+  def test_normalize_v2_tweet_retweet_falls_back_to_author_id_when_user_has_no_name
+    tweet = {
+      "id" => "1", "text" => "RT @100: truncated…",
+      "author_id" => "200",
+      "referenced_tweets" => [{"type" => "retweeted", "id" => "99"}]
+    }
+    users = {"100" => {"id" => "100"}}
+    tweets = {"99" => {"id" => "99", "text" => "full text", "author_id" => "100"}}
+    result = @probe.send(:normalize_v2_tweet, tweet, users, {}, tweets)
+
+    assert_equal "RT @100: full text", result["text"]
+  end
+
+  def test_normalize_v2_tweet_retweet_uses_author_id_when_user_not_in_includes
+    tweet = {
+      "id" => "1", "text" => "RT @100: truncated…",
+      "author_id" => "200",
+      "referenced_tweets" => [{"type" => "retweeted", "id" => "99"}]
+    }
+    tweets = {"99" => {"id" => "99", "text" => "full text", "author_id" => "100"}}
+    result = @probe.send(:normalize_v2_tweet, tweet, {}, {}, tweets)
+
+    assert_equal "RT @100: full text", result["text"]
+  end
+
   # ---------- normalize_v2_user ----------
 
   def test_normalize_v2_user_returns_as_is_with_screen_name

@@ -1765,13 +1765,7 @@ fn execute_remote_command(
             stream_tweets(
                 backend,
                 "/2/tweets/sample/stream",
-                vec![
-                    (
-                        "tweet.fields".to_string(),
-                        "author_id,created_at".to_string(),
-                    ),
-                    ("expansions".to_string(), "author_id".to_string()),
-                ],
+                v2_stream_params(),
                 AuthScheme::OAuth2Bearer,
                 leaf,
                 out,
@@ -2984,7 +2978,7 @@ fn tweet_from_stream_event(event: Value) -> Option<Value> {
     }
 
     let data = event.get("data")?;
-    let text = data.get("text").and_then(Value::as_str)?.to_string();
+    let mut text = data.get("text").and_then(Value::as_str)?.to_string();
     let id = data
         .get("id")
         .and_then(Value::as_str)
@@ -2995,23 +2989,63 @@ fn tweet_from_stream_event(event: Value) -> Option<Value> {
         .and_then(Value::as_str)
         .unwrap_or("unknown")
         .to_string();
-    let author_name = event
-        .get("includes")
-        .and_then(|includes| includes.get("users"))
+
+    let find_user_name = |uid: &str| -> Option<String> {
+        event
+            .get("includes")
+            .and_then(|includes| includes.get("users"))
+            .and_then(Value::as_array)
+            .and_then(|users| {
+                users.iter().find_map(|user| {
+                    if user.get("id").and_then(Value::as_str) == Some(uid) {
+                        user.get("username")
+                            .or_else(|| user.get("screen_name"))
+                            .and_then(Value::as_str)
+                            .map(ToString::to_string)
+                    } else {
+                        None
+                    }
+                })
+            })
+    };
+
+    let author_name = find_user_name(&author_id).unwrap_or_else(|| author_id.clone());
+
+    // Expand truncated retweet text from included referenced tweet
+    if let Some(rt_id) = data
+        .get("referenced_tweets")
         .and_then(Value::as_array)
-        .and_then(|users| {
-            users.iter().find_map(|user| {
-                if user.get("id").and_then(Value::as_str) == Some(author_id.as_str()) {
-                    user.get("username")
-                        .or_else(|| user.get("screen_name"))
-                        .and_then(Value::as_str)
-                        .map(ToString::to_string)
+        .and_then(|refs| {
+            refs.iter().find_map(|r| {
+                if r.get("type").and_then(Value::as_str) == Some("retweeted") {
+                    r.get("id").and_then(Value::as_str).map(ToString::to_string)
                 } else {
                     None
                 }
             })
         })
-        .unwrap_or_else(|| author_id.clone());
+        && let Some(rt_tweet) = event
+            .get("includes")
+            .and_then(|includes| includes.get("tweets"))
+            .and_then(Value::as_array)
+            .and_then(|tweets| {
+                tweets
+                    .iter()
+                    .find(|t| t.get("id").and_then(Value::as_str) == Some(rt_id.as_str()))
+            })
+    {
+        let rt_author = rt_tweet
+            .get("author_id")
+            .and_then(Value::as_str)
+            .and_then(find_user_name)
+            .unwrap_or_default();
+        let rt_text = rt_tweet
+            .get("text")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        text = format!("RT @{rt_author}: {rt_text}");
+    }
+
     let created_at = data
         .get("created_at")
         .and_then(Value::as_str)
@@ -3344,13 +3378,7 @@ fn stream_filtered_tweets(
     let stream_result = stream_tweets(
         backend,
         "/2/tweets/search/stream",
-        vec![
-            (
-                "tweet.fields".to_string(),
-                "author_id,created_at".to_string(),
-            ),
-            ("expansions".to_string(), "author_id".to_string()),
-        ],
+        v2_stream_params(),
         AuthScheme::OAuth2Bearer,
         leaf,
         out,
@@ -3619,6 +3647,19 @@ fn v2_tweet_params() -> Vec<(String, String)> {
         ("expansions".to_string(), V2_TWEET_EXPANSIONS.to_string()),
         ("user.fields".to_string(), V2_USER_FIELDS.to_string()),
         ("place.fields".to_string(), V2_PLACE_FIELDS.to_string()),
+    ]
+}
+
+fn v2_stream_params() -> Vec<(String, String)> {
+    vec![
+        (
+            "tweet.fields".to_string(),
+            "author_id,created_at,referenced_tweets".to_string(),
+        ),
+        (
+            "expansions".to_string(),
+            "author_id,referenced_tweets.id".to_string(),
+        ),
     ]
 }
 
