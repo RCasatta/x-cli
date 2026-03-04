@@ -755,35 +755,7 @@ fn execute_remote_command(
             Ok(0)
         }
         [single] if single == "matrix" => {
-            let rule_ids = install_filtered_stream_rules(backend, &["の lang:ja".to_string()])?;
-            let max_events = stream_max_events();
-            let mut seen = 0usize;
-            let stream_result = backend.stream_json_lines(
-                "/2/tweets/search/stream",
-                vec![("tweet.fields".to_string(), "text".to_string())],
-                AuthScheme::OAuth2Bearer,
-                &mut |event| {
-                    let Some(tweet) = tweet_from_stream_event(event) else {
-                        return true;
-                    };
-                    let text = tweet_text(&tweet, false);
-                    let matrix: String = text
-                        .chars()
-                        .filter(|ch| ('\u{3000}'..='\u{309f}').contains(ch))
-                        .collect::<String>()
-                        .chars()
-                        .rev()
-                        .collect();
-                    if !matrix.is_empty() {
-                        write!(out, "\x1b[1;32;40m{}\x1b[0m", matrix).ok();
-                        seen += 1;
-                    }
-                    max_events.map(|max| seen < max).unwrap_or(true)
-                },
-            );
-            let cleanup_result = remove_filtered_stream_rules(backend, &rule_ids);
-            stream_result?;
-            cleanup_result?;
+            run_matrix_stream(backend, out)?;
             Ok(0)
         }
         [single] if single == "direct_messages" => {
@@ -1910,35 +1882,7 @@ fn execute_remote_command(
             Ok(0)
         }
         [first, second] if first == "stream" && second == "matrix" => {
-            let rule_ids = install_filtered_stream_rules(backend, &["の lang:ja".to_string()])?;
-            let max_events = stream_max_events();
-            let mut seen = 0usize;
-            let stream_result = backend.stream_json_lines(
-                "/2/tweets/search/stream",
-                vec![("tweet.fields".to_string(), "text".to_string())],
-                AuthScheme::OAuth2Bearer,
-                &mut |event| {
-                    let Some(tweet) = tweet_from_stream_event(event) else {
-                        return true;
-                    };
-                    let text = tweet_text(&tweet, false);
-                    let matrix: String = text
-                        .chars()
-                        .filter(|ch| ('\u{3000}'..='\u{309f}').contains(ch))
-                        .collect::<String>()
-                        .chars()
-                        .rev()
-                        .collect();
-                    if !matrix.is_empty() {
-                        write!(out, "\x1b[1;32;40m{}\x1b[0m", matrix).ok();
-                        seen += 1;
-                    }
-                    max_events.map(|max| seen < max).unwrap_or(true)
-                },
-            );
-            let cleanup_result = remove_filtered_stream_rules(backend, &rule_ids);
-            stream_result?;
-            cleanup_result?;
+            run_matrix_stream(backend, out)?;
             Ok(0)
         }
         [first, second] if first == "stream" && second == "users" => {
@@ -3212,6 +3156,7 @@ fn stream_tweets(
         };
 
         print_stream_tweet(&tweet, leaf, out);
+        out.flush().ok();
         seen += 1;
         max_events.map(|max| seen < max).unwrap_or(true)
     })?;
@@ -3679,6 +3624,40 @@ fn stream_filtered_tweets(
 
     stream_result?;
     cleanup_result
+}
+
+fn run_matrix_stream(backend: &mut dyn Backend, out: &mut dyn Write) -> Result<(), CommandError> {
+    let rule_ids = install_filtered_stream_rules(backend, &["の lang:ja".to_string()])?;
+    let max_events = stream_max_events();
+    let mut seen = 0usize;
+    let stream_result = backend.stream_json_lines(
+        "/2/tweets/search/stream",
+        vec![("tweet.fields".to_string(), "text".to_string())],
+        AuthScheme::OAuth2Bearer,
+        &mut |event| {
+            let Some(tweet) = tweet_from_stream_event(event) else {
+                return true;
+            };
+            let text = tweet_text(&tweet, false);
+            let matrix: String = text
+                .chars()
+                .filter(|ch| ('\u{3000}'..='\u{309f}').contains(ch))
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect();
+            if !matrix.is_empty() {
+                write!(out, "\x1b[1;32;40m{}\x1b[0m", matrix).ok();
+                out.flush().ok();
+                seen += 1;
+            }
+            max_events.map(|max| seen < max).unwrap_or(true)
+        },
+    );
+    let cleanup_result = remove_filtered_stream_rules(backend, &rule_ids);
+    stream_result?;
+    cleanup_result?;
+    Ok(())
 }
 
 fn expand_path(path: &str) -> PathBuf {
