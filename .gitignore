@@ -18,3 +18,4 @@ tmp/*
 target/
 mutants.out/
 x-api/Cargo.lock
+result
