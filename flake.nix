@@ -13,7 +13,7 @@
       in
       {
         packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "x";
+          pname = "x-cli";
           version = "6.0.0";
           src = ./.;
           cargoHash = "sha256-NnUBs6P0HLfDaBTLWgyef4sM7vDzzojoOEXNL5p6rMM=";
@@ -21,6 +21,9 @@
           nativeBuildInputs = with pkgs; [ pkg-config rustc cargo ];
           OPENSSL_DIR = "${pkgs.openssl.out}";
           OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include";
+          postInstall = ''
+            mv $out/bin/x $out/bin/x-cli
+          '';
         };
 
         devShells.default = pkgs.mkShell {
